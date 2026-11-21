@@ -1,0 +1,39 @@
+# Despliegue con un solo comando:  docker compose up --build
+# Levanta MySQL (importa bd.sql automáticamente) y la API en http://localhost:8000
+services:
+  db:
+    image: mysql:8.0
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./backend_API/bd.sql:/docker-entrypoint-initdb.d/bd.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./backend_API
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: bd_blog_videojuegos
+      SECRET_KEY: cambia-esta-clave-por-una-larga-y-aleatoria
+      TOKEN_EXPIRE_MINUTES: "120"
+      DEV_MODE: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/app/uploads
+
+volumes:
+  dbdata:
+  uploads:
